@@ -1,4 +1,4 @@
-package group11.dtu.engauge;
+package group32.dtu.engauge;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

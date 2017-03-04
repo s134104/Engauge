@@ -1,4 +1,4 @@
-package group11.dtu.engauge;
+package group32.dtu.engauge;
 
 import org.junit.Test;
 
