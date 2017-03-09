@@ -1,15 +1,15 @@
 package group32.dtu.engauge;
 
 
+import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.Manifest;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -23,7 +23,12 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static group32.dtu.engauge.R.id.map;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener, ConnectionCallbacks, OnConnectionFailedListener{
 
@@ -32,7 +37,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public static final String TAG = MapsActivity.class.getSimpleName();
     private LocationRequest mLocationRequest;
 
+    private List<Location> locations;
+
     private Location location;
+
+    private PolylineOptions options;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,19 +49,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+                .findFragmentById(map);
         mapFragment.getMapAsync(this);
 
+        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 108);
 
+        /*
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Log.i(TAG, "***REQUESTING PERMISSIONS");
 
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 108);
+
 
         } else {
             Log.i(TAG, "***PERMISSIONS ALREADY GRANTED");
         }
-
+        */
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
@@ -63,8 +74,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Create the LocationRequest object
         mLocationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setInterval(10 * 1000)        // 10 seconds, in milliseconds
-                .setFastestInterval(1 * 1000); // 1 second, in milliseconds
+                .setInterval(1 * 1000)        // 10 seconds, in milliseconds
+                .setFastestInterval(1 * 1000) // 1 second, in milliseconds
+                .setSmallestDisplacement(0);
+
 
     }
 
@@ -87,14 +100,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onConnected(@Nullable Bundle bundle) {
         Log.i(TAG, "LOCATION SERVICES CONNECTED");
         try{
-             location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
 
-            if (location == null) {
-                LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
-            }
-            else {
-                handleNewLocation(location);
-            }
+
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+
+
+            location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 17));
+
         }
         catch (SecurityException e){
             Log.e(TAG, e.getMessage());
@@ -108,10 +121,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.i(TAG, "LOCATION SERVICES TRYING RECONNECT");
     }
 
-    @Override
-    public void onLocationChanged(Location location) {
-        handleNewLocation(location);
-    }
 
     @Override
     protected void onPause() {
@@ -120,34 +129,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
             mGoogleApiClient.disconnect();
         }
-    }
-
-    private void setUpMap() {
-        double currentLatitude = location.getLatitude();
-        double currentLongitude = location.getLongitude();
-
-        LatLng latLng = new LatLng(currentLatitude, currentLongitude);
-
-        MarkerOptions options = new MarkerOptions()
-                .position(latLng)
-                .title("I am here!");
-        mMap.addMarker(options);
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-
-    }
-
-    private void handleNewLocation(Location location) {
-        Log.d(TAG, location.toString());
-
-        double currentLatitude = location.getLatitude();
-        double currentLongitude = location.getLongitude();
-        LatLng latLng = new LatLng(currentLatitude, currentLongitude);
-
-        MarkerOptions options = new MarkerOptions()
-                .position(latLng)
-                .title("I am here!");
-        mMap.addMarker(options);
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
     }
 
     @Override
@@ -162,4 +143,42 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        //mMap.moveCamera();
+
+
+        if (locations == null){
+            locations = new ArrayList<>();
+            Log.i(TAG, "LOCATIONS NULL");
+            options = new PolylineOptions()
+                    .width(5)
+                    .color(Color.RED);
+        }
+        Log.i(TAG, "LOCATION CHANGED");
+        locations.add(location);
+        handleNewLocation(location);
+    }
+
+
+    private void handleNewLocation(Location location) {
+        Log.d(TAG, "HANDLING NEW LOCATION");
+
+        drawPrimaryLinePath(location);
+
+    }
+
+
+
+    private void drawPrimaryLinePath(Location location)
+    {
+
+        options.add(new LatLng(location.getLatitude(), location.getLongitude()));
+
+        mMap.addPolyline( options );
+
+    }
+
 }
