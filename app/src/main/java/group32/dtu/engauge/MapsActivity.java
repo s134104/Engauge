@@ -2,6 +2,8 @@ package group32.dtu.engauge;
 
 
 import android.Manifest;
+import android.bluetooth.BluetoothAdapter;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -27,6 +29,9 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+
+import group32.dtu.engauge.group32.dtu.engauge.bluetooth.BluetoothUtils;
 
 import static group32.dtu.engauge.R.id.map;
 
@@ -39,9 +44,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private List<Location> locations;
 
+    private final int[] cols = new int[]{Color.RED, Color.GREEN, Color.BLUE, Color.BLACK};
+
     private Location location;
 
-    private PolylineOptions options;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,11 +107,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onConnected(@Nullable Bundle bundle) {
         Log.i(TAG, "LOCATION SERVICES CONNECTED");
         try{
-
-
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
-
-
             location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 17));
 
@@ -125,10 +128,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onPause() {
         super.onPause();
-        if (mGoogleApiClient.isConnected()) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-            mGoogleApiClient.disconnect();
-        }
+        //if (mGoogleApiClient.isConnected()) {
+         //   LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+          //  mGoogleApiClient.disconnect();
+        //}
     }
 
     @Override
@@ -153,9 +156,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (locations == null){
             locations = new ArrayList<>();
             Log.i(TAG, "LOCATIONS NULL");
-            options = new PolylineOptions()
-                    .width(5)
-                    .color(Color.RED);
+
         }
         Log.i(TAG, "LOCATION CHANGED");
         locations.add(location);
@@ -174,11 +175,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void drawPrimaryLinePath(Location location)
     {
+        int idx = new Random().nextInt(cols.length);
+        PolylineOptions options = new PolylineOptions()
+                .width(5)
+                .color(cols[idx])
+                .add(new LatLng(this.location.getLatitude(), this.location.getLongitude()))
+                .add(new LatLng(location.getLatitude(), location.getLongitude()));
 
-        options.add(new LatLng(location.getLatitude(), location.getLongitude()));
+        mMap.addPolyline(options);
+        this.location = location;
 
-        mMap.addPolyline( options );
+    }
 
+    private void initBluetooth(){
+        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        if (!mBluetoothAdapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivity(enableBtIntent);
+        }
+        BluetoothUtils.doBlue(mBluetoothAdapter);
     }
 
 }
