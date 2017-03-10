@@ -16,6 +16,7 @@ public class MyBluetoothService {
 
 
     public void someStuff(BluetoothSocket sock){
+
         new ConnectedThread(sock).start();
 
 

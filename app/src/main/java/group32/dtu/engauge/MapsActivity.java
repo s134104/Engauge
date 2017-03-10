@@ -33,6 +33,8 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -49,6 +51,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationRequest mLocationRequest;
     private boolean isBtConnected = false;
 
+    public BluetoothDevice dev;
+
     BluetoothAdapter myBluetooth;
     BluetoothSocket btSocket;
     private List<Location> locations;
@@ -57,7 +61,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     String address = null;
     private Location location;
 
-    private UUID uuid;
+    //private UUID uuid;
+    private UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,7 +136,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 17));
 
-            initBluetooth();
+            //initBluetooth();
         }
         catch (SecurityException e){
             Log.e(TAG, e.getMessage());
@@ -158,7 +163,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
 
-        uuid = UUID.randomUUID();
+        //uuid = UUID.randomUUID();
 
         switch (requestCode) {
             case 108:
@@ -198,8 +203,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     {
         int idx = new Random().nextInt(cols.length);
         PolylineOptions options = new PolylineOptions()
-                .width(5)
-                .color(cols[idx])
+                .width(10)
+                .color(Color.BLUE)
                 .add(new LatLng(this.location.getLatitude(), this.location.getLongitude()))
                 .add(new LatLng(location.getLatitude(), location.getLongitude()));
 
@@ -229,6 +234,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (deviceName.equals("HC-05\\r\\n")){
                     Log.d(TAG, "TRYING BLUETOOTH CONNECT TO HC");
                     address = deviceHardwareAddress;
+                    myBluetooth = BluetoothAdapter.getDefaultAdapter();
+                    dev = myBluetooth.getRemoteDevice(address);//connects to the device's address and checks if it's available
+
+                        //btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(uuid);//create a RFCOMM (SPP) connection
+                        //btSocket.connect();
+                        //new MyBluetoothService().someStuff(btSocket);
+
+                        //new MyBluetoothService().someStuff(btSocket);
+
+
+
+
                     new ConnectBT().execute();
                 }
             }
@@ -250,16 +267,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     myBluetooth = BluetoothAdapter.getDefaultAdapter();//get the mobile bluetooth device
                     BluetoothDevice dispositivo = myBluetooth.getRemoteDevice(address);//connects to the device's address and checks if it's available
                     Log.d(TAG, "GOT DEVICE " + dispositivo.getName());
-                    btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(uuid);//create a RFCOMM (SPP) connection
+                    //btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(uuid);//create a RFCOMM (SPP) connection
+                    try {
+                        btSocket = (BluetoothSocket) dev.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(dev,1);
+                        btSocket.connect();//start connection
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    } catch (InvocationTargetException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchMethodException e) {
+                        e.printStackTrace();
+                    }
+                    //btSocket = dispositivo.createRfcommSocketToServiceRecord(uuid);
+                    Log.d(TAG, "IS CONNECTED - " + btSocket.isConnected());
                     Log.d(TAG, "GOT SOCKET " + btSocket.getConnectionType());
-                    BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
-                    btSocket.connect();//start connection
+                    //BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
+
+
                     Log.d(TAG, "DID CONNECT");
                 }
             }
             catch (IOException e)
             {
                 Log.d(TAG, "CAUGH IO EX");
+                Log.d(TAG, e.getMessage());
+                Log.d(TAG, "IO MSG END");
                 ConnectSuccess = false;//if the try failed, you can check the exception here
             }
             return null;
@@ -276,26 +308,43 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.d(TAG, "Connection Failed.");
                 finish();
             }
-            else
-            {
+            else {
                 Log.d(TAG, "Connected.");
                 isBtConnected = true;
 
                 try {
                     InputStream mmInStream = btSocket.getInputStream();
 
-                    byte[] inBytes = new byte[128];
+                    Log.d(TAG, "TRYING TO READ");
 
-                    while(true){
-                        mmInStream.read(inBytes);
-                        Log.d("GOT DATA", new String(inBytes));
+                    InputStreamReader isr = new InputStreamReader(mmInStream);
+
+                    char[] buffer = new char[28];
+
+                    //byte[] buffer = new byte[256];
+                    int bytes;
+
+                    while (true) {
+                        try {
+                            //bytes = mmInStream.read(buffer);            //read bytes from input buffer
+                            //String readMessage = new String(buffer, 0, bytes);
+
+                            int charsRead = isr.read(buffer);
+
+                            // substring(0, charsRead);
+                            String sensorMessage = new String(buffer);
+
+                            // Send the obtained bytes to the UI Activity via handler
+                            Log.d(TAG, "GOT MESSAGE - " + sensorMessage);
+                            //bluetoothIn.obtainMessage(handlerState, bytes, -1, readMessage).sendToTarget();
+                        } catch (Exception e) {
+                            Log.d(TAG, "CAUGHT EX IN LOOP");
+                            Log.d(TAG, e.getMessage());
+                        }
                     }
-
-
-                } catch (IOException e) {
-                    e.printStackTrace();
+                } catch (Exception e){
+                    Log.d(TAG, e.getMessage());
                 }
-
             }
         }
     }
