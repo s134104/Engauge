@@ -5,17 +5,19 @@ import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -28,18 +30,16 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+
+import group32.dtu.engauge.group32.dtu.engauge.bluetooth.BrakingDataBluetoothService;
 
 import static group32.dtu.engauge.R.id.map;
 
@@ -47,21 +47,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
-    public static final String TAG = MapsActivity.class.getSimpleName();
+    public static final String TAG = "MAPS ACTIVITY";
     private LocationRequest mLocationRequest;
-    private boolean isBtConnected = false;
-
-    public BluetoothDevice dev;
-
-    BluetoothAdapter myBluetooth;
-    BluetoothSocket btSocket;
     private List<Location> locations;
-
     private final int[] cols = new int[]{Color.RED, Color.GREEN, Color.BLUE, Color.BLACK};
-    String address = null;
+    private Context context;
     private Location location;
+    private Random random;
 
-    //private UUID uuid;
+    private Location curLoc;
+
     private UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     @Override
@@ -76,6 +71,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Manifest.permission.READ_PHONE_STATE
         requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 108);
 
+        random = new Random();
+        context = this.getApplicationContext();
 
         /*
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
@@ -104,13 +101,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Create the LocationRequest object
         mLocationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setInterval(1 * 1000)        // 10 seconds, in milliseconds
-                .setFastestInterval(1 * 1000) // 1 second, in milliseconds
-                .setSmallestDisplacement(0);
-
-
-
-
+                .setInterval(200)
+                .setFastestInterval(200)
+                .setSmallestDisplacement((float) 0.1)
+                .setMaxWaitTime(200);
     }
 
     @Override
@@ -137,6 +131,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 17));
 
             //initBluetooth();
+
+            initMockBluetooth();
         }
         catch (SecurityException e){
             Log.e(TAG, e.getMessage());
@@ -150,7 +146,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.i(TAG, "LOCATION SERVICES TRYING RECONNECT");
     }
 
-
     @Override
     protected void onPause() {
         super.onPause();
@@ -162,41 +157,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-
-        //uuid = UUID.randomUUID();
-
-        switch (requestCode) {
-            case 108:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    //continueYourTask
-                }
-                break;
-            default:
-                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
+
 
     @Override
     public void onLocationChanged(Location location) {
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         //mMap.moveCamera();
 
+        curLoc = location;
+        Log.i(TAG, location.toString());
 
+
+        Toast.makeText(context, location.toString(), Toast.LENGTH_SHORT).show();
+
+        /*
         if (locations == null){
             locations = new ArrayList<>();
             Log.i(TAG, "LOCATIONS NULL");
 
         }
-       // Log.i(TAG, "LOCATION CHANGED");
         locations.add(location);
-        handleNewLocation(location);
-    }
-
-    private void handleNewLocation(Location location) {
-        //Log.d(TAG, "HANDLING NEW LOCATION");
-
         drawPrimaryLinePath(location);
-
+        */
     }
 
     private void drawPrimaryLinePath(Location location)
@@ -213,10 +197,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    private void drawBreakingDot(int breakingPower){
 
+        Double alpha = new Double(((double)(breakingPower + 2)/12)  * 255);
+        Log.d(TAG, "COLOR ALPHA " + (double)(breakingPower + 2)/12);
+        int a = alpha.intValue();
 
-    private void initBluetooth(){
-        Log.d(TAG, "TRYING BLUETOOTH");
+        if (curLoc != null){
+            CircleOptions circleOpts = new CircleOptions()
+                    .center(new LatLng(curLoc.getLatitude(), curLoc.getLongitude()))
+                    .radius(0.1)
+                    .strokeColor(Color.argb(a, 255, 0, 0))
+                    .fillColor(Color.argb(a, 255, 0, 0));
+
+            mMap.addCircle(circleOpts);
+        }
+    }
+
+    private Handler messageHandler = new Handler() {
+        public void handleMessage(Message msg) {
+
+            drawBreakingDot(random.nextInt(11));
+
+            //Log.d(TAG, msg.toString());
+        }
+    };
+
+    private void initMockBluetooth(){
+        BrakingDataBluetoothService brakingDataService = new BrakingDataBluetoothService();
+        brakingDataService.startMockDataService(messageHandler);
+    }
+
+    private void initBluetooth() {
+        Log.d(TAG, "Initiating bluetooth");
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!mBluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -225,124 +238,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
         Log.d(TAG, pairedDevices.toString());
         if (pairedDevices.size() > 0) {
-            // There are paired devices. Get the name and address of each paired device.
-            BluetoothSocket tmp = null;
             for (BluetoothDevice device : pairedDevices) {
                 String deviceName = device.getName();
-                Log.d(TAG, "DEVICE NAME - " + deviceName);
-                String deviceHardwareAddress = device.getAddress(); // MAC address
-                Log.d(TAG, "TRUE - " + deviceName.equals("HC-05\\r\\n"));
+                Log.d(TAG, "Found device - " + deviceName);
+                String deviceHardwareAddress = device.getAddress();
                 if (deviceName.equals("HC-05\\r\\n")){
-                    Log.d(TAG, "TRYING BLUETOOTH CONNECT TO HC");
-                    address = deviceHardwareAddress;
-                    myBluetooth = BluetoothAdapter.getDefaultAdapter();
-                    dev = myBluetooth.getRemoteDevice(address);//connects to the device's address and checks if it's available
-
-                        //btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(uuid);//create a RFCOMM (SPP) connection
-                        //btSocket.connect();
-                        //new MyBluetoothService().someStuff(btSocket);
-                        //new MyBluetoothService().someStuff(btSocket);
-
-                    new ConnectBT().execute();
+                    connectToDeviceAndStartReceivingData(deviceHardwareAddress);
+                    break;
                 }
             }
         }
     }
 
-    private class ConnectBT extends AsyncTask<Void, Void, Void>  // UI thread
-    {
-
-        private boolean ConnectSuccess = true; //if it's here, it's almost connected
-        @Override
-        protected Void doInBackground(Void... devices) //while the progress dialog is shown, the connection is done in background
-        {
-            try
-            {
-                if (btSocket == null || !isBtConnected)
-                {
-                    Log.d(TAG, "TRYING TO CONNECT DEVICE");
-                    myBluetooth = BluetoothAdapter.getDefaultAdapter();//get the mobile bluetooth device
-                    BluetoothDevice dispositivo = myBluetooth.getRemoteDevice(address);//connects to the device's address and checks if it's available
-                    Log.d(TAG, "GOT DEVICE " + dispositivo.getName());
-                    //btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(uuid);//create a RFCOMM (SPP) connection
-                    try {
-                        btSocket = (BluetoothSocket) dev.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(dev,1);
-                        btSocket.connect();//start connection
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    } catch (InvocationTargetException e) {
-                        e.printStackTrace();
-                    } catch (NoSuchMethodException e) {
-                        e.printStackTrace();
-                    }
-                    //btSocket = dispositivo.createRfcommSocketToServiceRecord(uuid);
-                    Log.d(TAG, "IS CONNECTED - " + btSocket.isConnected());
-                    Log.d(TAG, "GOT SOCKET " + btSocket.getConnectionType());
-                    //BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
-
-
-                    Log.d(TAG, "DID CONNECT");
-                }
-            }
-            catch (IOException e)
-            {
-                Log.d(TAG, "CAUGH IO EX");
-                Log.d(TAG, e.getMessage());
-                Log.d(TAG, "IO MSG END");
-                ConnectSuccess = false;//if the try failed, you can check the exception here
-            }
-            return null;
-        }
-        @Override
-        protected void onPostExecute(Void result) //after the doInBackground, it checks if everything went fine
-        {
-            Log.d(TAG, "BLUETOOTH CONNECTION DONE");
-            super.onPostExecute(result);
-
-            if (!ConnectSuccess)
-            {
-                // Is it a SPP Bluetooth? Try again.
-                Log.d(TAG, "Connection Failed.");
-                finish();
-            }
-            else {
-                Log.d(TAG, "Connected.");
-                isBtConnected = true;
-
-                try {
-                    InputStream mmInStream = btSocket.getInputStream();
-
-                    Log.d(TAG, "TRYING TO READ");
-
-                    InputStreamReader isr = new InputStreamReader(mmInStream);
-
-                    char[] buffer = new char[28];
-
-                    //byte[] buffer = new byte[256];
-                    int bytes;
-
-                    while (true) {
-                        try {
-                            //bytes = mmInStream.read(buffer);            //read bytes from input buffer
-                            //String readMessage = new String(buffer, 0, bytes);
-
-                            int charsRead = isr.read(buffer);
-
-                            // substring(0, charsRead);
-                            String sensorMessage = new String(buffer);
-
-                            // Send the obtained bytes to the UI Activity via handler
-                            Log.d(TAG, "GOT MESSAGE - " + sensorMessage);
-                            //bluetoothIn.obtainMessage(handlerState, bytes, -1, readMessage).sendToTarget();
-                        } catch (Exception e) {
-                            Log.d(TAG, "CAUGHT EX IN LOOP");
-                            Log.d(TAG, e.getMessage());
-                        }
-                    }
-                } catch (Exception e){
-                    Log.d(TAG, e.getMessage());
-                }
-            }
+    private void connectToDeviceAndStartReceivingData(String deviceAddress){
+        Log.d(TAG, "Trying to connect to HC-05 using bluetooth");
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        BluetoothDevice brakingMeter = bluetoothAdapter.getRemoteDevice(deviceAddress);
+        try{
+            BluetoothSocket btSocket = (BluetoothSocket) brakingMeter.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(brakingMeter,1);
+            BrakingDataBluetoothService brakingDataService = new BrakingDataBluetoothService();
+            brakingDataService.startDataService(btSocket, messageHandler);
+        } catch (Exception e){
+            Log.e(TAG, "Exception establishing bluetooth connection", e);
         }
     }
 }
