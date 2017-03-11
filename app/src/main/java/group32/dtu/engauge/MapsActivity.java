@@ -213,8 +213,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private void initBluetooth(){
 
+
+    private void initBluetooth(){
         Log.d(TAG, "TRYING BLUETOOTH");
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!mBluetoothAdapter.isEnabled()) {
@@ -240,11 +241,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         //btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(uuid);//create a RFCOMM (SPP) connection
                         //btSocket.connect();
                         //new MyBluetoothService().someStuff(btSocket);
-
                         //new MyBluetoothService().someStuff(btSocket);
-
-
-
 
                     new ConnectBT().execute();
                 }
