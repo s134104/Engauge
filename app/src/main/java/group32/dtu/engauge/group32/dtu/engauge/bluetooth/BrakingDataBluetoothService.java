@@ -22,7 +22,8 @@ public class BrakingDataBluetoothService {
 
     public void startMockDataService(Handler handler){
         mHandler = handler;
-        new TestingThread().start();
+        TestingThread test = new TestingThread();
+        test.start();
     }
 
     private interface MessageConstants {
@@ -36,8 +37,8 @@ public class BrakingDataBluetoothService {
             Random r = new Random();
             while (true){
                 try {
-                    messageString = "msg " + i + " braking:" + r.nextInt(11);
-
+                    Integer braking = (Integer) r.nextInt(11);
+                    messageString = braking.toString();
 
                     Message message = mHandler.obtainMessage(MessageConstants.MESSAGE_READ, messageString);
                     message.sendToTarget();
@@ -52,30 +53,48 @@ public class BrakingDataBluetoothService {
     private class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
+        private final BufferedReader br;
 
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
+
             InputStream tmpIn = null;
             try {
                 tmpIn = socket.getInputStream();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 Log.e(TAG, "Error occurred when creating input stream", e);
             }
             mmInStream = tmpIn;
+            br =  new BufferedReader(new InputStreamReader(mmInStream));
         }
 
         public void run() {
-            BufferedReader br = new BufferedReader(new InputStreamReader(mmInStream));
+            Log.d(TAG, "MSG FROM BLUETOOTH");
             String messageString;
+            /*
+            byte[] buf = new byte[256];
+            try {
+                mmInStream.read(buf);
+                Log.d(TAG, new String(buf));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            */
+
             try{
                 while ((messageString = br.readLine()) != null) {
-                    Message message = mHandler.obtainMessage(MessageConstants.MESSAGE_READ, messageString);
-                    message.sendToTarget();
-                    Log.d(TAG, "MESSAGE FROM DEV " + messageString);
+
+                    if (messageString.length() == 1){
+                        Message message = mHandler.obtainMessage(MessageConstants.MESSAGE_READ, messageString);
+                        message.sendToTarget();
+                    }
+
+                    //Log.d(TAG, "MESSAGE FROM DEV " + messageString);
                 }
             }catch (IOException e){
                 Log.e(TAG, "Error while reading message", e);
             }
+
         }
 
         public void cancel() {

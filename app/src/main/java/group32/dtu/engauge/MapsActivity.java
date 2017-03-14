@@ -103,7 +103,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(200)
                 .setFastestInterval(200)
-                .setSmallestDisplacement((float) 0.1)
+                .setSmallestDisplacement((float) 0.0)
                 .setMaxWaitTime(200);
     }
 
@@ -130,9 +130,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 17));
 
-            //initBluetooth();
+            initBluetooth();
 
-            initMockBluetooth();
+            //initMockBluetooth();
         }
         catch (SecurityException e){
             Log.e(TAG, e.getMessage());
@@ -170,7 +170,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.i(TAG, location.toString());
 
 
-        Toast.makeText(context, location.toString(), Toast.LENGTH_SHORT).show();
+        //Toast.makeText(context, location.toString(), Toast.LENGTH_SHORT).show();
 
         /*
         if (locations == null){
@@ -197,27 +197,42 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private void drawBreakingDot(int breakingPower){
+    private void drawBrakingDot(Integer brakingPower){
 
-        Double alpha = new Double(((double)(breakingPower + 2)/12)  * 255);
-        Log.d(TAG, "COLOR ALPHA " + (double)(breakingPower + 2)/12);
+        int intCol = Color.argb(255, 255, 0, 0);
+
+        Toast.makeText(context, brakingPower.toString(), Toast.LENGTH_SHORT).show();
+
+        Log.d(TAG, "BRAKING POWER " + brakingPower);
+        if (brakingPower >= 1){
+            intCol = Color.argb(255, 0, 0, 0);
+        }
+        Double alpha = new Double(((double)(brakingPower + 2)/12)  * 255);
+        //Log.d(TAG, "COLOR ALPHA " + (double)(breakingPower + 2)/12);
         int a = alpha.intValue();
 
         if (curLoc != null){
             CircleOptions circleOpts = new CircleOptions()
                     .center(new LatLng(curLoc.getLatitude(), curLoc.getLongitude()))
                     .radius(0.1)
-                    .strokeColor(Color.argb(a, 255, 0, 0))
-                    .fillColor(Color.argb(a, 255, 0, 0));
-
+                    .strokeColor(intCol)
+                    .fillColor(intCol);
             mMap.addCircle(circleOpts);
         }
     }
 
+    private void putBrakingPin(Integer brakingPower){
+
+    }
+
+
     private Handler messageHandler = new Handler() {
         public void handleMessage(Message msg) {
+            String message = (String) msg.obj;
 
-            drawBreakingDot(random.nextInt(11));
+
+            //Log.d(TAG, msg.toString());
+            drawBrakingDot(Integer.parseInt(message));
 
             //Log.d(TAG, msg.toString());
         }
@@ -256,8 +271,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         BluetoothDevice brakingMeter = bluetoothAdapter.getRemoteDevice(deviceAddress);
         try{
             BluetoothSocket btSocket = (BluetoothSocket) brakingMeter.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(brakingMeter,1);
+
+
+            btSocket.connect();
             BrakingDataBluetoothService brakingDataService = new BrakingDataBluetoothService();
             brakingDataService.startDataService(btSocket, messageHandler);
+            Log.d(TAG, "CONNECTION TYPE: " + btSocket.getConnectionType());
+
+            Log.d(TAG, "DONE WITH BLUETOOTH IN MAIN");
         } catch (Exception e){
             Log.e(TAG, "Exception establishing bluetooth connection", e);
         }
