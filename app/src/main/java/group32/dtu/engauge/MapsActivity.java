@@ -17,6 +17,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -39,7 +41,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import group32.dtu.engauge.group32.dtu.engauge.bluetooth.BrakingDataBluetoothService;
+import group32.dtu.engauge.bluetooth.BrakingDataBluetoothService;
+import group32.dtu.engauge.persistence.StorageUtils;
 
 import static group32.dtu.engauge.R.id.map;
 
@@ -56,6 +59,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Random random;
 
     private Location curLoc;
+    private Button sessionButton;
 
     private UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
@@ -74,6 +78,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         random = new Random();
         context = this.getApplicationContext();
 
+
+        sessionButton = (Button)findViewById(R.id.sessionButton);
         /*
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
 
@@ -107,6 +113,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .setMaxWaitTime(200);
     }
 
+    public void startSession(View view) {
+        if (sessionButton.getText().equals(getString(R.string.start_session))){
+            sessionButton.setText(R.string.stop_session);
+            Log.d(TAG, "SESSION STARTED");
+        } else {
+            sessionButton.setText(R.string.start_session);
+            Log.d(TAG, "SESSION STOPPED");
+        }
+    }
+
     @Override
     public void onConnectionSuspended(int i) {
         Log.i(TAG, "LOCATION SERVICES SUSPENDED");
@@ -130,8 +146,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 17));
 
-            initBluetooth();
+            //initBluetooth();
+            //storeData();
 
+            retrieveData();
             //initMockBluetooth();
         }
         catch (SecurityException e){
@@ -221,20 +239,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void putBrakingPin(Integer brakingPower){
-
-    }
-
 
     private Handler messageHandler = new Handler() {
         public void handleMessage(Message msg) {
             String message = (String) msg.obj;
 
+            //drawBrakingDot(Integer.parseInt(message));
 
-            //Log.d(TAG, msg.toString());
-            drawBrakingDot(Integer.parseInt(message));
-
-            //Log.d(TAG, msg.toString());
         }
     };
 
@@ -282,5 +293,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } catch (Exception e){
             Log.e(TAG, "Exception establishing bluetooth connection", e);
         }
+    }
+
+    public void storeData(){
+        StorageUtils.store(context);
+    }
+
+    public void retrieveData(){
+        StorageUtils.retrieve(context);
     }
 }

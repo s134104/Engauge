@@ -1,4 +1,4 @@
-package group32.dtu.engauge.group32.dtu.engauge.bluetooth;
+package group32.dtu.engauge.bluetooth;
 
 import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
