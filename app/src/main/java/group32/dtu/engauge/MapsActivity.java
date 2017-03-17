@@ -19,6 +19,7 @@ import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -34,6 +35,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.List;
@@ -42,7 +45,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import group32.dtu.engauge.bluetooth.BrakingDataBluetoothService;
-import group32.dtu.engauge.persistence.StorageUtils;
+import group32.dtu.engauge.model.BrakingDataPoint;
+import group32.dtu.engauge.model.TrainingSession;
 
 import static group32.dtu.engauge.R.id.map;
 
@@ -55,12 +59,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private List<Location> locations;
     private final int[] cols = new int[]{Color.RED, Color.GREEN, Color.BLUE, Color.BLACK};
     private Context context;
-    private Location location;
     private Random random;
 
     private Location curLoc;
     private Button sessionButton;
+    private Button previousButton;
+    private boolean sessionActive;
+    private TrainingSession currentSession;
+    private MarkerOptions curLocMarkerOptions;
+    private Marker curLocMarker;
 
+    private TextView realtimeStatsArea;
     private UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     @Override
@@ -78,8 +87,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         random = new Random();
         context = this.getApplicationContext();
 
+        sessionActive = false;
 
         sessionButton = (Button)findViewById(R.id.sessionButton);
+
+        previousButton = (Button)findViewById(R.id.previousButton);
+
+
+        previousButton.setOnClickListener(new previousButtonListener());
+
+
+        realtimeStatsArea = (TextView) findViewById(R.id.realtimeStatsArea);
         /*
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
 
@@ -109,19 +127,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(200)
                 .setFastestInterval(200)
-                .setSmallestDisplacement((float) 0.0)
+                .setSmallestDisplacement((float) 1.0)
                 .setMaxWaitTime(200);
     }
 
-    public void startSession(View view) {
-        if (sessionButton.getText().equals(getString(R.string.start_session))){
-            sessionButton.setText(R.string.stop_session);
-            Log.d(TAG, "SESSION STARTED");
-        } else {
-            sessionButton.setText(R.string.start_session);
-            Log.d(TAG, "SESSION STOPPED");
-        }
-    }
 
     @Override
     public void onConnectionSuspended(int i) {
@@ -142,20 +151,65 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onConnected(@Nullable Bundle bundle) {
         Log.i(TAG, "LOCATION SERVICES CONNECTED");
         try{
+
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
-            location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 17));
+            curLoc = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            curLocMarkerOptions = new MarkerOptions().position(new LatLng(curLoc.getLatitude(), curLoc.getLongitude())).title("You are here");
+            curLocMarker = mMap.addMarker(curLocMarkerOptions);
+
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(curLoc.getLatitude(), curLoc.getLongitude()), 17));
+
 
             //initBluetooth();
-            //storeData();
 
-            retrieveData();
-            //initMockBluetooth();
+            initMockBluetooth();
+
+            sessionButton.setOnClickListener(new sessionButtonListener());
         }
         catch (SecurityException e){
             Log.e(TAG, e.getMessage());
         }
     }
+
+    private class previousButtonListener implements  Button.OnClickListener{
+        @Override
+        public void onClick(View v) {
+            Intent intent = new Intent(MapsActivity.this, SessionsActivity.class);
+
+            //EditText editText = (EditText) findViewById(R.id.editText);
+            //String message = editText.getText().toString();
+            //intent.putExtra(EXTRA_MESSAGE, message);
+
+            startActivity(intent);
+
+        }
+    }
+
+    private class sessionButtonListener implements Button.OnClickListener{
+        public void onClick(View v) {
+            if (sessionButton.getText().equals(getString(R.string.start_session))){
+                sessionButton.setText(R.string.stop_session);
+                Log.d(TAG, "SESSION STARTED");
+
+                sessionActive = true;
+                currentSession = new TrainingSession("some_session", System.currentTimeMillis());
+
+                Toast.makeText(context, "Session started", Toast.LENGTH_SHORT).show();
+
+
+            } else {
+                sessionActive = false;
+                stopAndStoreSession();
+
+
+                sessionButton.setText(R.string.start_session);
+                Log.d(TAG, "SESSION STOPPED");
+
+                Toast.makeText(context, "Session stopped", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
 
     @Override
     protected void onResume() {
@@ -181,13 +235,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onLocationChanged(Location location) {
-        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        //mMap.moveCamera();
+        if (sessionActive){
+            drawLineToNewLocation(location);
+        }
+
+
+        curLocMarker.remove();
+        curLocMarkerOptions.position(new LatLng(location.getLatitude(), location.getLongitude()));
+        curLocMarker = mMap.addMarker(curLocMarkerOptions);
 
         curLoc = location;
-        Log.i(TAG, location.toString());
+        //Log.i(TAG, location.toString());
 
-
+        if (sessionActive){
+            currentSession.addLocation(curLoc);
+        }
         //Toast.makeText(context, location.toString(), Toast.LENGTH_SHORT).show();
 
         /*
@@ -201,18 +263,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         */
     }
 
-    private void drawPrimaryLinePath(Location location)
+    private void drawLineToNewLocation(Location newLocation)
     {
         int idx = new Random().nextInt(cols.length);
         PolylineOptions options = new PolylineOptions()
                 .width(10)
                 .color(Color.BLUE)
-                .add(new LatLng(this.location.getLatitude(), this.location.getLongitude()))
-                .add(new LatLng(location.getLatitude(), location.getLongitude()));
+                .add(new LatLng(curLoc.getLatitude(), curLoc.getLongitude()))
+                .add(new LatLng(newLocation.getLatitude(), newLocation.getLongitude()));
 
         mMap.addPolyline(options);
-        this.location = location;
-
     }
 
     private void drawBrakingDot(Integer brakingPower){
@@ -239,10 +299,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-
     private Handler messageHandler = new Handler() {
         public void handleMessage(Message msg) {
             String message = (String) msg.obj;
+            if (sessionActive){
+                currentSession.addBrakingDataPoint(new BrakingDataPoint(System.currentTimeMillis(), Integer.parseInt(message)));
+                realtimeStatsArea.setText("Braking: " + message);
+            }
 
             //drawBrakingDot(Integer.parseInt(message));
 
@@ -295,11 +358,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    public void storeData(){
-        StorageUtils.store(context);
-    }
-
-    public void retrieveData(){
-        StorageUtils.retrieve(context);
+    public void stopAndStoreSession(){
+        currentSession.stopSession();
+        //StorageUtils.persistSessionToFile(context, currentSession);
+        // TODO
+        // store session in server, local sqlite db etc
     }
 }

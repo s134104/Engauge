@@ -21,10 +21,28 @@ tools:context="group32.dtu.engauge.MapsActivity"
         android:padding="10dp"
         android:layout_marginTop="20dp"
         android:paddingRight="10dp"
-        android:onClick="startSession"
         android:id="@+id/sessionButton"
         />
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|left"
+        android:text="@string/prev_sessions"
+        android:padding="10dp"
+        android:layout_marginTop="20dp"
+        android:paddingRight="10dp"
+        android:id="@+id/previousButton"
+        />
+
+    <TextView android:id="@+id/realtimeStatsArea"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="I am a \n TextView "
+        android:layout_gravity="top|right"
+        android:padding="10dp"
+        android:layout_marginTop="10dp"
+        android:paddingRight="10dp" />
 
 </fragment>
 
