@@ -19,7 +19,12 @@ public class TrainingSession implements Serializable{
     List<BrakingDataPoint> brakingPoints;
     long duration;
 
-    public TrainingSession(){};
+    boolean isActiveInView = false;
+
+
+    public TrainingSession(String sessionName){
+        this.sessionName = sessionName;
+    };
 
     public TrainingSession(String sessionName, long startTimestamp){
         this.sessionName = sessionName;
@@ -40,4 +45,25 @@ public class TrainingSession implements Serializable{
         endTimeStamp = System.currentTimeMillis();
         duration = endTimeStamp - startTimestamp;
     }
+
+    public String toString(){
+        return "ToString - Session " + sessionName;
+    }
+
+    public String getSessionName(){
+        return this.sessionName;
+    }
+
+    public void activate(){
+        isActiveInView = true;
+    }
+
+    public void disable(){
+        isActiveInView = false;
+    }
+
+    public boolean isActiveInView(){
+        return isActiveInView;
+    }
+
 }

@@ -1,10 +1,12 @@
 package group32.dtu.engauge.model;
 
+import java.io.Serializable;
+
 /**
  * Created by oskar on 17.03.17.
  */
 
-public class BrakingDataPoint {
+public class BrakingDataPoint implements Serializable{
     long timeStamp;
     int braking;
 

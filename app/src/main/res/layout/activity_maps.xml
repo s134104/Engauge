@@ -38,11 +38,12 @@ tools:context="group32.dtu.engauge.MapsActivity"
     <TextView android:id="@+id/realtimeStatsArea"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="I am a \n TextView "
+        android:text=""
         android:layout_gravity="top|right"
         android:padding="10dp"
         android:layout_marginTop="10dp"
-        android:paddingRight="10dp" />
+        android:textSize="25sp"
+        />
 
 </fragment>
 

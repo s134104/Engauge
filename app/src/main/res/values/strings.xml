@@ -6,4 +6,6 @@
     <string name="start_session">Start</string>
     <string name="stop_session">Stop</string>
     <string name="prev_sessions">Prev. sessions</string>
+
+    <string name="compare_sessions">Compare</string>
 </resources>

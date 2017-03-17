@@ -47,6 +47,7 @@ import java.util.UUID;
 import group32.dtu.engauge.bluetooth.BrakingDataBluetoothService;
 import group32.dtu.engauge.model.BrakingDataPoint;
 import group32.dtu.engauge.model.TrainingSession;
+import group32.dtu.engauge.persistence.StorageUtils;
 
 import static group32.dtu.engauge.R.id.map;
 
@@ -74,6 +75,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        Log.d(TAG, "MAPSACTIVITY CREATED");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -360,7 +363,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void stopAndStoreSession(){
         currentSession.stopSession();
-        //StorageUtils.persistSessionToFile(context, currentSession);
+        StorageUtils.persistSessionToFile(context, currentSession);
         // TODO
         // store session in server, local sqlite db etc
     }
