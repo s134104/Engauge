@@ -33,7 +33,7 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".MapsActivity"
+            android:name=".RealTimeMapsActivity"
             android:label="@string/title_activity_maps">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -42,7 +42,10 @@
             </intent-filter>
         </activity>
         <activity android:name="group32.dtu.en.SessionsActivity" />
-        <activity android:name=".SessionsActivity"></activity>
+        <activity android:name=".SessionsActivity" />
+        <activity
+            android:name=".AnalyzeMapsActivity"
+            android:label="@string/title_activity_analyze_maps"></activity>
     </application>
 
 </manifest>

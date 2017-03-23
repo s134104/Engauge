@@ -31,23 +31,7 @@ public class SessionsActivity extends ListActivity {
         setContentView(R.layout.activity_sessions);
         context = this.getApplicationContext();
 
-        /*
-        TrainingSession s1 = new TrainingSession("session1");
-        TrainingSession s2 = new TrainingSession("session2");
-        TrainingSession s3 = new TrainingSession("session3");
-        TrainingSession s4 = new TrainingSession("session4");
-
-        ArrayList<TrainingSession> sessions = new ArrayList<>();
-        sessions.add(s1);
-        sessions.add(s2);
-        sessions.add(s3);
-        sessions.add(s4);
-        */
-
         ArrayList<TrainingSession> sessions = StorageUtils.getTrainingSessions(context);
-
-        // android.R.layout.simple_list_item_1
-        //ArrayAdapter<TrainingSession> testAdapter = new ArrayAdapter(this,  R.layout.item_trainingsession, sessions);
         TrainingSessionsAdapter sessionsAdapter = new TrainingSessionsAdapter(this, sessions);
 
         setListAdapter(sessionsAdapter);
@@ -74,7 +58,7 @@ public class SessionsActivity extends ListActivity {
     private class compareButtonListener implements  Button.OnClickListener{
         @Override
         public void onClick(View v) {
-            Intent intent = new Intent(SessionsActivity.this, MapsActivity.class);
+            Intent intent = new Intent(SessionsActivity.this, RealTimeMapsActivity.class);
 
             //EditText editText = (EditText) findViewById(R.id.editText);
             //String message = editText.getText().toString();

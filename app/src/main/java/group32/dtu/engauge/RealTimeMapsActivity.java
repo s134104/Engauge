@@ -51,7 +51,7 @@ import group32.dtu.engauge.persistence.StorageUtils;
 
 import static group32.dtu.engauge.R.id.map;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener, ConnectionCallbacks, OnConnectionFailedListener, ActivityCompat.OnRequestPermissionsResultCallback{
+public class RealTimeMapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener, ConnectionCallbacks, OnConnectionFailedListener, ActivityCompat.OnRequestPermissionsResultCallback{
 
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
@@ -78,7 +78,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         Log.d(TAG, "MAPSACTIVITY CREATED");
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_maps);
+        setContentView(R.layout.activity_realtime_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(map);
@@ -177,7 +177,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private class previousButtonListener implements  Button.OnClickListener{
         @Override
         public void onClick(View v) {
-            Intent intent = new Intent(MapsActivity.this, SessionsActivity.class);
+            Intent intent = new Intent(RealTimeMapsActivity.this, SessionsActivity.class);
 
             //EditText editText = (EditText) findViewById(R.id.editText);
             //String message = editText.getText().toString();
@@ -334,7 +334,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 String deviceName = device.getName();
                 Log.d(TAG, "Found device - " + deviceName);
                 String deviceHardwareAddress = device.getAddress();
-                if (deviceName.equals("HC-05\\r\\n")){
+                if (deviceName.equals("H-C-2010-06-01   ")){
                     connectToDeviceAndStartReceivingData(deviceHardwareAddress);
                     break;
                 }

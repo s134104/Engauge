@@ -3,16 +3,16 @@ package group32.dtu.engauge.persistence;
 import android.content.Context;
 import android.util.Log;
 
-import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import group32.dtu.engauge.model.TrainingSession;
 
@@ -23,36 +23,13 @@ import group32.dtu.engauge.model.TrainingSession;
 public class StorageUtils {
 
     private static final String TAG = "STORAGE";
-    private static final String FILENAME = "SESSION_OBJECTS";
     private StorageUtils(){};
 
-    public static void store(Context context){
-        String string = "hello world!";
-        FileOutputStream fos = null;
-        try {
-            fos = context.openFileOutput(FILENAME, Context.MODE_PRIVATE);
-            fos.write(string.getBytes());
-            fos.close();
-            Log.d(TAG, "WROTE STUFF");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void retrieve(Context context){
-        FileInputStream fis = null;
-        try {
-            fis = context.openFileInput(FILENAME);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-            Log.d(TAG, "READ STUFF");
-            Log.d(TAG, br.readLine());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void persistSessionToFile(Context context, TrainingSession session){
-        ObjectOutputStream oos = getOutPutStream(context);
+
+        String fileName = "EG-" + Long.toString(session.getStartTimestamp());
+        ObjectOutputStream oos = getOutPutStream(context, fileName);
+
         try{
             oos.writeObject(session);
             Log.d(TAG, "Persisted to file");
@@ -62,62 +39,51 @@ public class StorageUtils {
         }
     }
 
-    private static boolean fileExists(Context context) {
-        File file = context.getFileStreamPath(FILENAME);
-        if(file == null || !file.exists()) {
-            return false;
-        }
-        return true;
-    }
-
-    private static ObjectOutputStream getOutPutStream(Context context){
+    private static ObjectOutputStream getOutPutStream(Context context, String fileName){
         FileOutputStream fos;
-        ObjectOutputStream oos = null;
+        ObjectOutputStream aoos = null;
         try{
-            fos = context.openFileOutput(FILENAME, Context.MODE_APPEND);
-            if (!fileExists(context)){
-                Log.d(TAG, "FILE DOESN'T EXIST");
-                return new ObjectOutputStream(fos);
-            } else{
-                Log.d(TAG, "FILE EXISTS");
-                return new AppendingObjectOutputStream(fos);
-            }
+            fos = context.openFileOutput(fileName, Context.MODE_APPEND);
+            aoos = new ObjectOutputStream(fos);
+
         } catch (IOException e){
             Log.d(TAG, "Exception creating stream", e);
         }
-        return null;
-    }
-
-    public static void readSessionsFromFile(Context context){
-        FileInputStream fis = null;
-        try{
-            fis = context.openFileInput(FILENAME);
-            ObjectInputStream ois = new ObjectInputStream(fis);
-            TrainingSession model = (TrainingSession) ois.readObject();
-            Log.d(TAG, "READ OBJECT");
-        }
-        catch (IOException | ClassNotFoundException e ){
-            Log.e(TAG, "Exception while retrieving from file", e);
-        }
+        return aoos;
     }
 
     public static ArrayList<TrainingSession> getTrainingSessions(Context context){
-        FileInputStream fis;
+
+        File dir = new File(context.getFilesDir().getPath());
+
+        Log.d(TAG, "Reading file stored at " + context.getFilesDir().getPath());
+
+        File [] files = dir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.startsWith("EG-");
+            }
+        });
         ArrayList<TrainingSession> trainingSessions = new ArrayList<>();
-        TrainingSession session;
-        try{
-            fis = context.openFileInput(FILENAME);
-            ObjectInputStream ois = new ObjectInputStream(fis);
-            while(true){
+        Log.d(TAG, Arrays.deepToString(files));
+
+        for (File sessionFile : files) {
+            String fileName = sessionFile.getName();
+            Log.d(TAG, "Trying to read file " + fileName);
+            FileInputStream fis;
+            TrainingSession session;
+            try{
+                fis = context.openFileInput(fileName);
+                ObjectInputStream ois = new ObjectInputStream(fis);
                 session = (TrainingSession) ois.readObject();
                 trainingSessions.add(session);
             }
-        }
-        catch (EOFException e){
-            Log.d(TAG, "END OF FILE");
-        }
-        catch (IOException | ClassNotFoundException e ){
-            Log.e(TAG, "Exception while retrieving from file", e);
+            catch (EOFException e){
+                Log.d(TAG, "END OF FILE");
+            }
+            catch (IOException | ClassNotFoundException e ){
+                Log.e(TAG, "Exception while retrieving from file", e);
+            }
         }
         return trainingSessions;
     }

@@ -66,4 +66,8 @@ public class TrainingSession implements Serializable{
         return isActiveInView;
     }
 
+    public long getStartTimestamp(){
+        return  startTimestamp;
+    }
+
 }

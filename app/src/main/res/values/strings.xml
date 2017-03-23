@@ -8,4 +8,5 @@
     <string name="prev_sessions">Prev. sessions</string>
 
     <string name="compare_sessions">Compare</string>
+    <string name="title_activity_analyze_maps">Map</string>
 </resources>

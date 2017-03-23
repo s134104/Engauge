@@ -33,7 +33,7 @@ public class TrainingSessionsAdapter extends ArrayAdapter<TrainingSession> {
         TextView sessionInfoView = (TextView) convertView.findViewById(R.id.sessionInfo);
 
         sessionNameView.setText(session.getSessionName());
-        sessionInfoView.setText("Session info");
+        sessionInfoView.setText(" with start " + Long.toString(session.getStartTimestamp()));
 
         return convertView;
     }
