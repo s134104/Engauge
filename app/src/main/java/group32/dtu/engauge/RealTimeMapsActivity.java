@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
@@ -16,6 +17,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -79,45 +81,19 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
         Log.d(TAG, "MAPSACTIVITY CREATED");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_realtime_maps);
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(map);
-        mapFragment.getMapAsync(this);
-
-        // Manifest.permission.READ_PHONE_STATE
-        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 108);
-
         random = new Random();
         context = this.getApplicationContext();
-
         sessionActive = false;
-
         sessionButton = (Button)findViewById(R.id.sessionButton);
-
         previousButton = (Button)findViewById(R.id.previousButton);
-
-
         previousButton.setOnClickListener(new previousButtonListener());
-
-
         realtimeStatsArea = (TextView) findViewById(R.id.realtimeStatsArea);
-        /*
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-
-        } else {
-            //TODO
-        }
-        */
-        /*
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "***REQUESTING PERMISSIONS");
 
 
+        mapFragment.getMapAsync(this);
 
-        } else {
-            Log.i(TAG, "***PERMISSIONS ALREADY GRANTED");
-        }
-        */
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
@@ -125,13 +101,22 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
                 .addApi(LocationServices.API)
                 .build();
 
-        // Create the LocationRequest object
         mLocationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(200)
                 .setFastestInterval(200)
                 .setSmallestDisplacement((float) 1.0)
                 .setMaxWaitTime(200);
+
+        /*
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+
+        } else {
+            //TODO
+        }
+        */
+
+
     }
 
 
@@ -148,6 +133,22 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        Log.d(TAG, "GOOGLE MAP READY");
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "***REQUESTING PERMISSIONS");
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 108);
+        } else {
+            Log.i(TAG, "***PERMISSIONS ALREADY GRANTED");
+            connectToGoogleApi();
+        }
+
+
+    }
+
+    private void connectToGoogleApi(){
+        mGoogleApiClient.connect();
     }
 
     @Override
@@ -161,8 +162,6 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
             curLocMarker = mMap.addMarker(curLocMarkerOptions);
 
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(curLoc.getLatitude(), curLoc.getLongitude()), 17));
-
-
             //initBluetooth();
 
             initMockBluetooth();
@@ -170,7 +169,7 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
             sessionButton.setOnClickListener(new sessionButtonListener());
         }
         catch (SecurityException e){
-            Log.e(TAG, e.getMessage());
+            Log.e(TAG, "GOT SECURITY EXCEPTION", e);
         }
     }
 
@@ -178,13 +177,7 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
         @Override
         public void onClick(View v) {
             Intent intent = new Intent(RealTimeMapsActivity.this, SessionsActivity.class);
-
-            //EditText editText = (EditText) findViewById(R.id.editText);
-            //String message = editText.getText().toString();
-            //intent.putExtra(EXTRA_MESSAGE, message);
-
             startActivity(intent);
-
         }
     }
 
@@ -196,6 +189,7 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
 
                 sessionActive = true;
                 currentSession = new TrainingSession("some_session", System.currentTimeMillis());
+                currentSession.addLocation(curLoc);
 
                 Toast.makeText(context, "Session started", Toast.LENGTH_SHORT).show();
 
@@ -217,8 +211,8 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
     @Override
     protected void onResume() {
         super.onResume();
-        mGoogleApiClient.connect();
-        Log.i(TAG, "LOCATION SERVICES TRYING RECONNECT");
+
+        Log.d(TAG, "Fragment activitiy started or resumed");
     }
 
     @Override
@@ -233,6 +227,11 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == 108){
+            Log.d(TAG, "FINE LOCATION PERMISSIONS GRANTED");
+            connectToGoogleApi();
+        }
     }
 
 

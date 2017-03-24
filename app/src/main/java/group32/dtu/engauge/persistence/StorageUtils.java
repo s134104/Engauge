@@ -3,14 +3,17 @@ package group32.dtu.engauge.persistence;
 import android.content.Context;
 import android.util.Log;
 
-import java.io.EOFException;
+import com.google.gson.Gson;
+
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -28,36 +31,35 @@ public class StorageUtils {
     public static void persistSessionToFile(Context context, TrainingSession session){
 
         String fileName = "EG-" + Long.toString(session.getStartTimestamp());
-        ObjectOutputStream oos = getOutPutStream(context, fileName);
-
+        OutputStreamWriter osw = getOutPutStreamWriter(context, fileName);
+        Gson gson = new Gson();
+        String sessionString = gson.toJson(session);
         try{
-            oos.writeObject(session);
+            osw.write(sessionString);
             Log.d(TAG, "Persisted to file");
+            osw.close();
 
         }catch (IOException e){
             Log.e(TAG, "Exception while writing to file", e);
         }
     }
 
-    private static ObjectOutputStream getOutPutStream(Context context, String fileName){
+    private static OutputStreamWriter getOutPutStreamWriter(Context context, String fileName){
         FileOutputStream fos;
-        ObjectOutputStream aoos = null;
+        OutputStreamWriter osw = null;
         try{
             fos = context.openFileOutput(fileName, Context.MODE_APPEND);
-            aoos = new ObjectOutputStream(fos);
-
+            osw = new OutputStreamWriter(fos);
         } catch (IOException e){
             Log.d(TAG, "Exception creating stream", e);
         }
-        return aoos;
+        return osw;
     }
 
     public static ArrayList<TrainingSession> getTrainingSessions(Context context){
 
         File dir = new File(context.getFilesDir().getPath());
-
         Log.d(TAG, "Reading file stored at " + context.getFilesDir().getPath());
-
         File [] files = dir.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
@@ -66,24 +68,30 @@ public class StorageUtils {
         });
         ArrayList<TrainingSession> trainingSessions = new ArrayList<>();
         Log.d(TAG, Arrays.deepToString(files));
-
+        Gson gson = new Gson();
         for (File sessionFile : files) {
             String fileName = sessionFile.getName();
             Log.d(TAG, "Trying to read file " + fileName);
             FileInputStream fis;
             TrainingSession session;
+            String readStr = "";
+            String line = null;
             try{
                 fis = context.openFileInput(fileName);
-                ObjectInputStream ois = new ObjectInputStream(fis);
-                session = (TrainingSession) ois.readObject();
-                trainingSessions.add(session);
+                InputStreamReader isr = new InputStreamReader(fis);
+                BufferedReader br = new BufferedReader(isr);
+                while ((line = br.readLine()) != null) {
+                    readStr += line;
+                }
             }
-            catch (EOFException e){
-                Log.d(TAG, "END OF FILE");
+            catch (FileNotFoundException e) {
+                Log.e(TAG, "FILE NOT FOUND EXCEPTION", e);
+            } catch (IOException e) {
+                Log.e(TAG, "IO EXCEPTION", e);
             }
-            catch (IOException | ClassNotFoundException e ){
-                Log.e(TAG, "Exception while retrieving from file", e);
-            }
+            Log.d(TAG, "TRYING TO CONVERT");
+            session  = gson.fromJson(readStr.toString(), TrainingSession.class);
+            trainingSessions.add(session);
         }
         return trainingSessions;
     }

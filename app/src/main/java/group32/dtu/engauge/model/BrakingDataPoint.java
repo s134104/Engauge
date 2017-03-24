@@ -15,4 +15,19 @@ public class BrakingDataPoint implements Serializable{
         this.braking = braking;
     }
 
+    public long getTimeStamp() {
+        return timeStamp;
+    }
+
+    public void setTimeStamp(long timeStamp) {
+        this.timeStamp = timeStamp;
+    }
+
+    public int getBraking() {
+        return braking;
+    }
+
+    public void setBraking(int braking) {
+        this.braking = braking;
+    }
 }

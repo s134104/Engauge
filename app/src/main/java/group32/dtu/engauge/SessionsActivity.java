@@ -10,6 +10,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
 
+import com.google.gson.Gson;
+
 import java.util.ArrayList;
 
 import group32.dtu.engauge.model.TrainingSession;
@@ -18,10 +20,9 @@ import group32.dtu.engauge.persistence.StorageUtils;
 
 
 public class SessionsActivity extends ListActivity {
+
+    private ArrayList<TrainingSession> sessions;
     private final String TAG = "SESSIONS";
-
-    String[] listItems = {"item 1", "item 2 ", "list", "android", "item 3", "foobar", "bar", };
-
     private Button compareButton;
     private Context context;
 
@@ -31,7 +32,7 @@ public class SessionsActivity extends ListActivity {
         setContentView(R.layout.activity_sessions);
         context = this.getApplicationContext();
 
-        ArrayList<TrainingSession> sessions = StorageUtils.getTrainingSessions(context);
+        sessions = StorageUtils.getTrainingSessions(context);
         TrainingSessionsAdapter sessionsAdapter = new TrainingSessionsAdapter(this, sessions);
 
         setListAdapter(sessionsAdapter);
@@ -58,15 +59,18 @@ public class SessionsActivity extends ListActivity {
     private class compareButtonListener implements  Button.OnClickListener{
         @Override
         public void onClick(View v) {
-            Intent intent = new Intent(SessionsActivity.this, RealTimeMapsActivity.class);
-
-            //EditText editText = (EditText) findViewById(R.id.editText);
-            //String message = editText.getText().toString();
-            //intent.putExtra(EXTRA_MESSAGE, message);
-
+            Intent intent = new Intent(SessionsActivity.this, AnalyzeMapsActivity.class);
+            intent.putExtra("sessionsString", getActivatedSessionsString());
             startActivity(intent);
-
         }
+    }
+
+    private String getActivatedSessionsString(){
+        ArrayList<TrainingSession> activatedSessions = new ArrayList<>();
+        for (TrainingSession session : sessions){
+            if (session.isActiveInView()) activatedSessions.add(session);
+        }
+        return new Gson().toJson(activatedSessions);
     }
 
 }

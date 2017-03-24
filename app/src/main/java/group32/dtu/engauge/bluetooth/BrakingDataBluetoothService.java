@@ -71,30 +71,16 @@ public class BrakingDataBluetoothService {
         public void run() {
             Log.d(TAG, "MSG FROM BLUETOOTH");
             String messageString;
-            /*
-            byte[] buf = new byte[256];
-            try {
-                mmInStream.read(buf);
-                Log.d(TAG, new String(buf));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            */
-
             try{
                 while ((messageString = br.readLine()) != null) {
-
                     if (messageString.length() == 1){
                         Message message = mHandler.obtainMessage(MessageConstants.MESSAGE_READ, messageString);
                         message.sendToTarget();
                     }
-
-                    //Log.d(TAG, "MESSAGE FROM DEV " + messageString);
                 }
             }catch (IOException e){
                 Log.e(TAG, "Error while reading message", e);
             }
-
         }
 
         public void cancel() {

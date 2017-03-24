@@ -15,10 +15,9 @@ public class TrainingSession implements Serializable{
     String sessionName;
     long startTimestamp;
     long endTimeStamp;
-    List<Location> locations;
-    List<BrakingDataPoint> brakingPoints;
+    ArrayList<Location> locations;
+    ArrayList<BrakingDataPoint> brakingPoints;
     long duration;
-
     boolean isActiveInView = false;
 
 
@@ -29,12 +28,12 @@ public class TrainingSession implements Serializable{
     public TrainingSession(String sessionName, long startTimestamp){
         this.sessionName = sessionName;
         this.startTimestamp = startTimestamp;
-        this.locations = new ArrayList<>();
-        this.brakingPoints = new ArrayList<>();
+        this.locations = new ArrayList<Location>();
+        this.brakingPoints = new ArrayList<BrakingDataPoint>();
     }
 
     public void addLocation(Location location){
-        locations.add(location);
+        locations.add(new Location(location));
     }
 
     public void addBrakingDataPoint(BrakingDataPoint point){
@@ -68,6 +67,50 @@ public class TrainingSession implements Serializable{
 
     public long getStartTimestamp(){
         return  startTimestamp;
+    }
+
+    public void setSessionName(String sessionName) {
+        this.sessionName = sessionName;
+    }
+
+    public void setStartTimestamp(long startTimestamp) {
+        this.startTimestamp = startTimestamp;
+    }
+
+    public long getEndTimeStamp() {
+        return endTimeStamp;
+    }
+
+    public void setEndTimeStamp(long endTimeStamp) {
+        this.endTimeStamp = endTimeStamp;
+    }
+
+    public List<Location> getLocations() {
+        return locations;
+    }
+
+    public void setLocations(ArrayList<Location> locations) {
+        this.locations = locations;
+    }
+
+    public List<BrakingDataPoint> getBrakingPoints() {
+        return brakingPoints;
+    }
+
+    public void setBrakingPoints(ArrayList<BrakingDataPoint> brakingPoints) {
+        this.brakingPoints = brakingPoints;
+    }
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
+    }
+
+    public void setActiveInView(boolean activeInView) {
+        isActiveInView = activeInView;
     }
 
 }
