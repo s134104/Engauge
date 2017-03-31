@@ -143,8 +143,6 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
             Log.i(TAG, "***PERMISSIONS ALREADY GRANTED");
             connectToGoogleApi();
         }
-
-
     }
 
     private void connectToGoogleApi(){
@@ -193,15 +191,11 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
 
                 Toast.makeText(context, "Session started", Toast.LENGTH_SHORT).show();
 
-
             } else {
                 sessionActive = false;
                 stopAndStoreSession();
-
-
                 sessionButton.setText(R.string.start_session);
                 Log.d(TAG, "SESSION STOPPED");
-
                 Toast.makeText(context, "Session stopped", Toast.LENGTH_SHORT).show();
             }
         }
