@@ -160,9 +160,9 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
             curLocMarker = mMap.addMarker(curLocMarkerOptions);
 
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(curLoc.getLatitude(), curLoc.getLongitude()), 17));
-            //initBluetooth();
 
-            initMockBluetooth();
+            initBluetooth();    
+            //initMockBluetooth();
 
             sessionButton.setOnClickListener(new sessionButtonListener());
         }
@@ -327,7 +327,8 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
                 String deviceName = device.getName();
                 Log.d(TAG, "Found device - " + deviceName);
                 String deviceHardwareAddress = device.getAddress();
-                if (deviceName.equals("H-C-2010-06-01   ")){
+                if (deviceName.equals("H-C-2010-06-01" +
+                        "")){
                     connectToDeviceAndStartReceivingData(deviceHardwareAddress);
                     break;
                 }

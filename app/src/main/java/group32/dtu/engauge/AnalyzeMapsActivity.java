@@ -82,7 +82,7 @@ public class AnalyzeMapsActivity extends FragmentActivity implements OnMapReadyC
             TextView analyzeStats1 = (TextView) findViewById(R.id.analyzeStats1);
             setStatsTextView(sessions.get(0), analyzeStats1);
 
-            TextView analyzeStats2 = (TextView) findViewById(R.id.analyzeStats1);
+            TextView analyzeStats2 = (TextView) findViewById(R.id.analyzeStats2);
             setStatsTextView(sessions.get(1), analyzeStats2);
 
             //displayTwoSessionsConsolidated(sessions.get(0), sessions.get(1));
