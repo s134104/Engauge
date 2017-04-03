@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -40,12 +41,20 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.gson.Gson;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
+import cz.msebera.android.httpclient.HttpResponse;
+import cz.msebera.android.httpclient.client.HttpClient;
+import cz.msebera.android.httpclient.client.methods.HttpPost;
+import cz.msebera.android.httpclient.entity.ContentType;
+import cz.msebera.android.httpclient.entity.StringEntity;
+import cz.msebera.android.httpclient.impl.client.HttpClientBuilder;
 import group32.dtu.engauge.bluetooth.BrakingDataBluetoothService;
 import group32.dtu.engauge.model.BrakingDataPoint;
 import group32.dtu.engauge.model.TrainingSession;
@@ -161,8 +170,8 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
 
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(curLoc.getLatitude(), curLoc.getLongitude()), 17));
 
-            initBluetooth();    
-            //initMockBluetooth();
+            //initBluetooth();
+            initMockBluetooth();
 
             sessionButton.setOnClickListener(new sessionButtonListener());
         }
@@ -358,7 +367,40 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
     public void stopAndStoreSession(){
         currentSession.stopSession();
         StorageUtils.persistSessionToFile(context, currentSession);
-        // TODO
-        // store session in server, local sqlite db etc
+
+        new PostSessionTask().execute(currentSession);
+
     }
+
+
+    private class PostSessionTask extends AsyncTask<TrainingSession, Void,  HttpResponse> {
+
+        @Override
+        protected HttpResponse doInBackground(TrainingSession... sessions){
+            Gson gson = new Gson();
+            String jsonString = gson.toJson(sessions[0]);
+
+            HttpClient client = HttpClientBuilder.create().build();
+            StringEntity requestEntity = new StringEntity(
+                    jsonString,
+                    ContentType.APPLICATION_JSON);
+
+            HttpPost post = new HttpPost("http://engauge-server.herokuapp.com/api/sessions");
+            post.setEntity(requestEntity);
+
+            try{
+                return client.execute(post);
+            } catch (IOException e){
+                Log.e(TAG, "Expcetion while POSTing", e);
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(HttpResponse o) {
+            Log.d(TAG, "POST session - " + o);
+        }
+
+    }
+
 }
