@@ -170,8 +170,8 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
 
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(curLoc.getLatitude(), curLoc.getLongitude()), 17));
 
-            //initBluetooth();
-            initMockBluetooth();
+            initBluetooth();
+            //initMockBluetooth();
 
             sessionButton.setOnClickListener(new sessionButtonListener());
         }
@@ -244,7 +244,6 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
             drawLineToNewLocation(location);
         }
 
-
         curLocMarker.remove();
         curLocMarkerOptions.position(new LatLng(location.getLatitude(), location.getLongitude()));
         curLocMarker = mMap.addMarker(curLocMarkerOptions);
@@ -309,8 +308,8 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
             String message = (String) msg.obj;
             if (sessionActive){
                 currentSession.addBrakingDataPoint(new BrakingDataPoint(System.currentTimeMillis(), Integer.parseInt(message)));
-                realtimeStatsArea.setText("Braking: " + message);
             }
+            realtimeStatsArea.setText(message);
 
             //drawBrakingDot(Integer.parseInt(message));
 
@@ -359,8 +358,12 @@ public class RealTimeMapsActivity extends FragmentActivity implements OnMapReady
             Log.d(TAG, "CONNECTION TYPE: " + btSocket.getConnectionType());
 
             Log.d(TAG, "DONE WITH BLUETOOTH IN MAIN");
+            Toast.makeText(context, "Bluetooth connection succeeded", Toast.LENGTH_LONG).show();
+
         } catch (Exception e){
             Log.e(TAG, "Exception establishing bluetooth connection", e);
+            Toast.makeText(context, "Bluetooth connection failed", Toast.LENGTH_LONG).show();
+
         }
     }
 

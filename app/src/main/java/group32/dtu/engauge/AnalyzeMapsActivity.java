@@ -19,7 +19,10 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import group32.dtu.engauge.model.BrakingDataPoint;
@@ -187,7 +190,7 @@ public class AnalyzeMapsActivity extends FragmentActivity implements OnMapReadyC
         analyzeStats1.setText("1 time: " + s1 + "s \n" + "1 braking : " + brakingSum1);
 
         TextView analyzeStats2 = (TextView) findViewById(R.id.analyzeStats2);
-        analyzeStats2.setText("2 time: " + s2 + "s \n" + "2 braking : " + brakingSum1);
+        analyzeStats2.setText("2 time: " + s2 + "s \n" + "2 braking : " + brakingSum2);
 
     }
 
@@ -278,14 +281,19 @@ public class AnalyzeMapsActivity extends FragmentActivity implements OnMapReadyC
 
     private String getDisplayableStatsString(TrainingSession session){
         StringBuilder statsBuilder = new StringBuilder();
-        statsBuilder.append("Name: " + session.getSessionName() + "\n");
+
+        Date startDateTime = new Date(session.getStartTimestamp());
+        DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+        String startFormatted = formatter.format(startDateTime);
+
+        statsBuilder.append("Start: " + startFormatted + "\n");
         statsBuilder.append("Duration " + Long.toString(session.getDuration() / 1000) + "s \n");
         List<BrakingDataPoint> brakings = session.getBrakingPoints();
         int brakingSum = 0;
         for (BrakingDataPoint brakingPoint : brakings){
             brakingSum += brakingPoint.getBraking();
         }
-        statsBuilder.append("Braking total: " + Integer.toString(brakingSum) + "\n");
+        statsBuilder.append("Total: " + Integer.toString(brakingSum) + "\n");
         return statsBuilder.toString();
     }
 }

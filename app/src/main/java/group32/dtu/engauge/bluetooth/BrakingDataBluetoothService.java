@@ -73,13 +73,11 @@ public class BrakingDataBluetoothService {
             String messageString;
             try{
                 while ((messageString = br.readLine()) != null) {
-                    if (messageString.length() == 1){
-                        Message message = mHandler.obtainMessage(MessageConstants.MESSAGE_READ, messageString);
-                        message.sendToTarget();
-                    }
+                    Message message = mHandler.obtainMessage(MessageConstants.MESSAGE_READ, messageString);
+                    message.sendToTarget();
                 }
             }catch (IOException e){
-                Log.e(TAG, "Error while reading message", e);
+                Log.e(TAG, "Error while reading message (likely bluetooth disconnected)", e);
             }
         }
 

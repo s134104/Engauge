@@ -7,7 +7,10 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import group32.dtu.engauge.R;
 
@@ -32,8 +35,13 @@ public class TrainingSessionsAdapter extends ArrayAdapter<TrainingSession> {
         TextView sessionNameView = (TextView) convertView.findViewById(R.id.sessionName);
         TextView sessionInfoView = (TextView) convertView.findViewById(R.id.sessionInfo);
 
-        sessionNameView.setText(session.getSessionName());
-        sessionInfoView.setText(" with start " + Long.toString(session.getStartTimestamp()));
+        sessionNameView.setText("Session");
+
+        Date startDateTime = new Date(session.getStartTimestamp());
+        DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+        String startFormatted = formatter.format(startDateTime);
+
+        sessionInfoView.setText(" with start " + startFormatted);
 
         return convertView;
     }
